@@ -1,0 +1,331 @@
+{
+  "info": {
+    "name": "Realtime Chat Backend",
+    "description": "Start the server with npm run dev, then run these requests from top to bottom. Register creates a new email and phone each time and saves the login token for the later requests.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    { "key": "base_url", "value": "http://localhost:8000" },
+    { "key": "token", "value": "" },
+    { "key": "userId", "value": "" },
+    { "key": "otherUserId", "value": "" },
+    { "key": "chatId", "value": "" },
+    { "key": "messageId", "value": "" },
+    { "key": "myEmail", "value": "" },
+    { "key": "myPhone", "value": "" },
+    { "key": "otherEmail", "value": "" },
+    { "key": "otherPhone", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "1. Register me",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const stamp = Date.now().toString();",
+              "pm.collectionVariables.set('myEmail', 'me' + stamp + '@test.com');",
+              "pm.collectionVariables.set('myPhone', stamp.slice(-10));"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const body = pm.response.json();",
+              "pm.test('Account created', function () {",
+              "  pm.response.to.have.status(201);",
+              "  pm.expect(body.success).to.eql(true);",
+              "});",
+              "if (body.success && body.data) {",
+              "  pm.collectionVariables.set('token', body.data.token);",
+              "  pm.collectionVariables.set('userId', String(body.data.user.id));",
+              "}"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "auth": { "type": "noauth" },
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Aman\",\n  \"email\": \"{{myEmail}}\",\n  \"phone\": \"{{myPhone}}\",\n  \"profile_url\": \"\",\n  \"password\": \"pass1234\"\n}",
+          "options": { "raw": { "language": "json" } }
+        },
+        "url": "{{base_url}}/user/register"
+      }
+    },
+    {
+      "name": "2. Register other user",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const stamp = Date.now().toString();",
+              "pm.collectionVariables.set('otherEmail', 'other' + stamp + '@test.com');",
+              "pm.collectionVariables.set('otherPhone', ('8' + stamp).slice(-10));"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const body = pm.response.json();",
+              "pm.test('Other account created', function () {",
+              "  pm.response.to.have.status(201);",
+              "  pm.expect(body.success).to.eql(true);",
+              "});",
+              "if (body.success && body.data && body.data.user) {",
+              "  pm.collectionVariables.set('otherUserId', String(body.data.user.id));",
+              "}"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "auth": { "type": "noauth" },
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Neha\",\n  \"email\": \"{{otherEmail}}\",\n  \"phone\": \"{{otherPhone}}\",\n  \"profile_url\": \"\",\n  \"password\": \"pass1234\"\n}",
+          "options": { "raw": { "language": "json" } }
+        },
+        "url": "{{base_url}}/user/register"
+      }
+    },
+    {
+      "name": "3. Login",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const body = pm.response.json();",
+              "pm.test('Login works', function () {",
+              "  pm.response.to.have.status(200);",
+              "  pm.expect(body.success).to.eql(true);",
+              "});",
+              "if (body.success && body.data && body.data.token) {",
+              "  pm.collectionVariables.set('token', body.data.token);",
+              "  pm.collectionVariables.set('userId', String(body.data.user.id));",
+              "}"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "auth": { "type": "noauth" },
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{myEmail}}\",\n  \"password\": \"pass1234\"\n}",
+          "options": { "raw": { "language": "json" } }
+        },
+        "url": "{{base_url}}/user/login"
+      }
+    },
+    {
+      "name": "4. Create chat",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const body = pm.response.json();",
+              "pm.test('Chat ready', function () {",
+              "  pm.expect(body.success).to.eql(true);",
+              "  pm.expect(body.data.chatId).to.be.a('number');",
+              "});",
+              "if (body.success && body.data && body.data.chatId) {",
+              "  pm.collectionVariables.set('chatId', String(body.data.chatId));",
+              "}"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"userId\": {{otherUserId}}\n}",
+          "options": { "raw": { "language": "json" } }
+        },
+        "url": "{{base_url}}/chat/create"
+      }
+    },
+    {
+      "name": "5. Send message",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const body = pm.response.json();",
+              "pm.test('Message sent', function () {",
+              "  pm.response.to.have.status(201);",
+              "  pm.expect(body.success).to.eql(true);",
+              "});",
+              "if (body.success && body.data && body.data.messageId) {",
+              "  pm.collectionVariables.set('messageId', body.data.messageId);",
+              "}"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"text\": \"Hello\"\n}",
+          "options": { "raw": { "language": "json" } }
+        },
+        "url": "{{base_url}}/chat/{{chatId}}/message/send"
+      }
+    },
+    {
+      "name": "6. Get messages",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const body = pm.response.json();",
+              "pm.test('Messages loaded', function () {",
+              "  pm.response.to.have.status(200);",
+              "  pm.expect(body.success).to.eql(true);",
+              "  pm.expect(body.data.messages).to.be.an('array');",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/chat/{{chatId}}/messages?limit=20",
+          "host": ["{{base_url}}"],
+          "path": ["chat", "{{chatId}}", "messages"],
+          "query": [
+            { "key": "limit", "value": "20" }
+          ]
+        }
+      }
+    },
+    {
+      "name": "7. Mark message read",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const body = pm.response.json();",
+              "pm.test('Message marked read', function () {",
+              "  pm.response.to.have.status(200);",
+              "  pm.expect(body.success).to.eql(true);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": "{{base_url}}/chat/{{chatId}}/message/{{messageId}}/read"
+      }
+    },
+    {
+      "name": "8. Update last seen",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const body = pm.response.json();",
+              "pm.test('Last seen updated', function () {",
+              "  pm.response.to.have.status(200);",
+              "  pm.expect(body.success).to.eql(true);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"messageId\": \"{{messageId}}\"\n}",
+          "options": { "raw": { "language": "json" } }
+        },
+        "url": "{{base_url}}/chat/{{chatId}}/lastseen"
+      }
+    },
+    {
+      "name": "9. List my chats",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const body = pm.response.json();",
+              "pm.test('Chat list loaded', function () {",
+              "  pm.response.to.have.status(200);",
+              "  pm.expect(body.success).to.eql(true);",
+              "  pm.expect(body.data.chats).to.be.an('array');",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{base_url}}/user/chats"
+      }
+    }
+  ]
+}
